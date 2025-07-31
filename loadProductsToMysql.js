@@ -24,12 +24,19 @@ const products = [];
         
     })
     .on('end', () => {
-        const query = 'INSERT INTO products (id, name, category, price, stock) VALUES ?';
-        connection.query(query, [products], (err, result) => {
-            if (err) throw err ;
-                
-                console.log(`Inserted ${result.affectedRows} rows`);
-            
+        // Remove duplicate IDs
+        const uniqueProducts = [];
+        const seenIds = new Set();
+        products.forEach(product => {
+            if (!seenIds.has(product[0])) {
+                uniqueProducts.push(product);
+                seenIds.add(product[0]);
+            }
+        });
+        const query = 'INSERT INTO products (id, name, category, price, stock) VALUES ? ON DUPLICATE KEY UPDATE name=VALUES(name), category=VALUES(category), price=VALUES(price), stock=VALUES(stock)';
+        connection.query(query, [uniqueProducts], (err, result) => {
+            if (err) throw err;
+            console.log(`Inserted ${result.affectedRows} rows`);
             connection.end();
         });
     })
